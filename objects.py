@@ -25,7 +25,7 @@ class Object:
         self.texture = pygame.image.load("tex/" + tex_name + ".png")
         self.set_pos(x, y)
 
-    def draw_self(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface) -> None:
         screen.blit(self.texture, (self.x, self.y))
 
     def set_pos(self, x: int, y: int) -> None:
@@ -46,11 +46,11 @@ class Snake:
         for i in range(1, 4):
             self.body.append(Object("snake", self.x, (self.y - CUBE_TEXTURE_HEIGHT * i)))
 
-    def draw_self(self, screen: pygame.Surface):
+    def draw(self, screen: pygame.Surface):
         for part in self.body:
-            part.draw_self(screen)
+            part.draw(screen)
 
-    def move_snake(self, direction: Snake_Direction):
+    def move(self, direction: Snake_Direction):
         self.x += CUBE_TEXTURE_WIDTH * direction.value[0]
         self.y += CUBE_TEXTURE_HEIGHT * direction.value[1]
 
@@ -72,18 +72,19 @@ class Apple(Object):
         self.value = custom_value
         super().__init__("apple", x, y)
 
-    def move_apple(self, cubes_array: list[Cube], snake: Snake, screen: pygame.Surface) -> None:
+    def move(self, cubes_array: list[Cube], snake: Snake, screen: pygame.Surface) -> bool:
         free_cells = get_free_cells(cubes_array, snake)
 
         if len(free_cells) == 0:
             print("Out of free cells.")
-            return None
+            return True
 
         random_cell = free_cells[random.randrange(0, len(free_cells))]
 
         self.x = random_cell.x
         self.y = random_cell.y
-        self.draw_self(screen)
+        self.draw(screen)
+        return False
 
 def create_map(width: int, height: int) -> list[Cube]:
     cubes: list[Cube] = []
@@ -109,19 +110,24 @@ def is_cell_occupied(snake: Snake, cube: Cube) -> bool:
     return False
 
 
-def refresh_screen(screen: pygame.Surface, cubes_array: list[Cube], apple: Apple, snake: Snake) -> None:
+def refresh_screen(screen: pygame.Surface, cubes_array: list[Cube], apple: Apple, snake: Snake, score_tracker) -> None:
     screen.fill((0,0,0))
 
     for cube in cubes_array:
-        cube.draw_self(screen)
+        cube.draw(screen)
 
-    apple.draw_self(screen)
+    apple.draw(screen)
 
-    snake.draw_self(screen)
+    snake.draw(screen)
+
+    screen.blit(score_tracker, (10, 10))
 
     pygame.display.flip()
 
 def check_game_over(snake: Snake, screen_width: int, screen_height: int) -> bool:
+    for part in snake.body[1:]:
+        if part.x == snake.x and part.y == snake.y:
+            return True
     return ((snake.x < 0 or snake.x > screen_width) or (snake.y < 0 or snake.y > screen_height))
 
 def check_apple_eat(snake: Snake, apple: Apple) -> bool:
