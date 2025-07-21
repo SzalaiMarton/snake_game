@@ -46,6 +46,10 @@ class Snake:
         for i in range(1, 4):
             self.body.append(Object("snake", self.x, (self.y - CUBE_TEXTURE_HEIGHT * i)))
 
+    def __del__(self) -> None:
+        self.body.clear()
+        print("snake destroyed")
+
     def draw(self, screen: pygame.Surface):
         for part in self.body:
             part.draw(screen)

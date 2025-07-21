@@ -4,14 +4,13 @@ import objects as obj
 class Snake_Game:
     GAME_SPEED = 10
     TEXTURE_SIZE = 10
-    width = 680
-    height = 680
+    width = 400
+    height = 400
     running: bool
 
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height))
-        self.clock = pygame.time.Clock()
 
         self.font = pygame.font.SysFont(None, 36)
         self.cube_array = obj.create_map(int(self.width / obj.CUBE_TEXTURE_WIDTH), int(self.height / obj.CUBE_TEXTURE_HEIGHT))
@@ -26,6 +25,21 @@ class Snake_Game:
 
         self.win = False
         self.death = False
+        self.apple_pickup = False
+
+    
+    def reset(self):
+        del self.snake
+        del self.apple
+
+        self.current_snake_direction = obj.Snake_Direction.RIGHT
+
+        self.snake = obj.Snake(self.snake_spawn_point_x, self.snake_spawn_point_y)
+        self.apple = obj.Apple(1, 150, 150)
+
+        self.win = False
+        self.death = False
+        self.apple_pickup = False
 
 
     def get_direction_by_key(self, keys):
@@ -52,6 +66,7 @@ class Snake_Game:
 
     def run(self):
         self.running = True
+        self.clock = pygame.time.Clock()
 
         while self.running:
             for event in pygame.event.get():
@@ -84,6 +99,7 @@ class Snake_Game:
 
 
     def render(self, action):
+        self.apple_pickup = False
         self.get_direction_by_action(action)
 
         if self.current_snake_direction:
@@ -94,6 +110,7 @@ class Snake_Game:
             self.snake.body.append(obj.Object("snake", self.snake.body[-1].x, self.snake.body[-1].y))
             self.score_tracker = self.font.render(f"Score: {self.snake.score}", True, (255, 255, 255))
             self.win = self.apple.move(self.cube_array, self.snake, self.screen)
+            self.apple_pickup = True
 
         if self.win:
             return
@@ -106,14 +123,14 @@ class Snake_Game:
 
     def get_state(self):
         """
-        - returns:  [0] - every part's pos from snake's body, [1] - apple's pos, [2] - isWin, [3] - isDeath
+        - returns: [0] - every part's pos from snake's body, [1] - apple's pos, [2] - isWin, [3] - isDeath, [4] - isApplePickup
         """
 
         snake_pos = []
         for part in self.snake.body:
             snake_pos.append([part.x, part.y])
 
-        return snake_pos, [self.apple.x, self.apple.y], self.win, self.death
+        return snake_pos, [self.apple.x, self.apple.y], self.win, self.death, self.apple_pickup
 
 
     def get_actions(self):
@@ -128,7 +145,7 @@ class Snake_Game:
             return obj.Snake_Direction.DOWN, obj.Snake_Direction.RIGHT, obj.Snake_Direction.LEFT
         elif self.current_snake_direction == obj.Snake_Direction.RIGHT:
             return obj.Snake_Direction.DOWN, obj.Snake_Direction.RIGHT, obj.Snake_Direction.UP
-        elif self.current_snake_direction == obj.Snake_Direction.LEFT:
+        else:
             return obj.Snake_Direction.DOWN, obj.Snake_Direction.LEFT, obj.Snake_Direction.UP
         
 
@@ -139,13 +156,15 @@ class Snake_Game:
         
         state = self.get_state()
 
-        head_pos = state[0]
+        head_pos = state[0][0]
         apple_pos = state[1]
 
         if state[2]:
             return 200
         elif state[3]:
             return -200
+        elif state[4]:
+            return 20
         else:
             prev_pos_x = head_pos[0] - self.current_snake_direction.value[0]
             prev_pos_y = head_pos[1] - self.current_snake_direction.value[1]
@@ -153,10 +172,10 @@ class Snake_Game:
             # previous frame's distance between the apple and the snake's head
             prev_distance_x = abs(apple_pos[0] - prev_pos_x)
             prev_distance_y = abs(apple_pos[1] - prev_pos_y)
-            
+
             # current frame's distance between the apple and the snake's head
-            current_distance_x = abs(apple_pos[0] - self.snake.x)
-            current_distance_y = abs(apple_pos[1] - self.snake.y)
+            current_distance_x = abs(apple_pos[0] - head_pos[0])
+            current_distance_y = abs(apple_pos[1] - head_pos[1])
 
             if self.current_snake_direction == obj.Snake_Direction.UP or self.current_snake_direction == obj.Snake_Direction.DOWN:
                 if current_distance_y < prev_distance_y:
@@ -165,10 +184,11 @@ class Snake_Game:
                     return -1
                 else:
                     return 0
-            elif self.current_snake_direction == obj.Snake_Direction.LEFT or self.current_snake_direction == obj.Snake_Direction.RIGHT:
+            else:
                 if current_distance_x < prev_distance_x:
                     return 1
                 elif current_distance_x > prev_distance_x:
                     return -1
                 else:
                     return 0
+
