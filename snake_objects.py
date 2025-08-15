@@ -3,11 +3,12 @@ import random
 from typing import Optional
 from enum import Enum
 
-APPLE_VALUE = 1
-CUBE_TEXTURE_WIDTH = 10
-CUBE_TEXTURE_HEIGHT = 10
+class Settings:
+    APPLE_VALUE = 1
+    CUBE_TEXTURE_WIDTH = 20
+    CUBE_TEXTURE_HEIGHT = CUBE_TEXTURE_WIDTH
 
-MAP_OFFSET = 0
+    MAP_OFFSET = 0
 
 class Snake_Direction(Enum):
     UP = [0, -1]
@@ -43,20 +44,17 @@ class Snake:
         self.x = x
         self.y = y
         self.score = 0
-        for i in range(1, 4):
-            self.body.append(Object("snake", self.x, (self.y - CUBE_TEXTURE_HEIGHT * i)))
+        for i in range(0, 3):
+            self.body.append(Object("snake", (self.x - Settings.CUBE_TEXTURE_WIDTH * i), self.y))
 
-    def __del__(self) -> None:
-        self.body.clear()
-        print("snake destroyed")
 
     def draw(self, screen: pygame.Surface):
         for part in self.body:
             part.draw(screen)
 
     def move(self, direction: Snake_Direction):
-        self.x += CUBE_TEXTURE_WIDTH * direction.value[0]
-        self.y += CUBE_TEXTURE_HEIGHT * direction.value[1]
+        self.x += Settings.CUBE_TEXTURE_WIDTH * direction.value[0]
+        self.y += Settings.CUBE_TEXTURE_HEIGHT * direction.value[1]
 
         self.body.insert(0, Object("snake", self.x, self.y))
         self.body.pop()
@@ -92,9 +90,9 @@ class Apple(Object):
 
 def create_map(width: int, height: int) -> list[Cube]:
     cubes: list[Cube] = []
-    for y_index in range(MAP_OFFSET, height + MAP_OFFSET):
-        for x_index in range(MAP_OFFSET ,width + MAP_OFFSET):
-            cubes.append(Cube((CUBE_TEXTURE_WIDTH * x_index), (CUBE_TEXTURE_HEIGHT * y_index)))
+    for y_index in range(Settings.MAP_OFFSET, height + Settings.MAP_OFFSET):
+        for x_index in range(Settings.MAP_OFFSET ,width + Settings.MAP_OFFSET):
+            cubes.append(Cube((Settings.CUBE_TEXTURE_WIDTH * x_index), (Settings.CUBE_TEXTURE_HEIGHT * y_index)))
 
     return cubes
 
@@ -106,8 +104,16 @@ def get_free_cells(cubes_array: list[Cube], snake: Snake) -> list[Cube]:
 
     return free_cells
 
+def get_cube_by_pos(cube_array: list, x: int, y: int):
+    for cube in cube_array:
+        if cube.x == x and cube.y == y:
+            return cube
+    return None
 
 def is_cell_occupied(snake: Snake, cube: Cube) -> bool:
+    if cube == None:
+        return True
+
     for snake_part in snake.body:
         if (cube.x == snake_part.x and cube.y == snake_part.y) or cube.has_apple:
             return True
